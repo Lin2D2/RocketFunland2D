@@ -98,14 +98,14 @@ class Game:
                             (32 * self.tile_scaling, 32 * self.tile_scaling))
                         )
         # debugging draw textures to console
-        # for row in self.textures:
-        #     row_list = []
-        #     for e in row:
-        #         if e < 10:
-        #             row_list.append("0"+str(e))
-        #         else:
-        #             row_list.append(str(e))
-        #     print(row_list)
+        for row in self.map:
+            row_list = []
+            for e in row:
+                if e < 10:
+                    row_list.append("0"+str(e))
+                else:
+                    row_list.append(str(e))
+            print(row_list)
 
         # Player
         self.spawn_position = self.spawn_tiles[random.randint(0, 3)]
@@ -144,7 +144,24 @@ class Game:
         start_time = time()
         # fill screen
         self.screen.fill(self.background_color)
-        # collision detection
+        # gravity
+        self.player.velocity_y += .1
+
+        # player collision detection and movement
+        collider = self.player.boundary
+        collider = pygame.Rect(collider.x + self.player.velocity_x, collider.y, collider.width, collider.height)
+        collision_x = collider.collidelist(self.map_collison_rects)
+        collider = self.player.boundary
+        collider = pygame.Rect(collider.x, collider.y + self.player.velocity_y, collider.width, collider.height)
+        collision_y = collider.collidelist(self.map_collison_rects)
+        if collision_x == -1:
+            self.player.move(self.player.velocity_x, 0)
+        else:
+            self.player.velocity_x = 0
+        if collision_y == -1:
+            self.player.move(0, self.player.velocity_y)
+        else:
+            self.player.velocity_y = 0
 
         # draw textures  # TODO only draw tiles with movment
         for y_pos, y_list in enumerate(self.map):
@@ -154,7 +171,7 @@ class Game:
                                      (x_pos * self.tile_height * self.tile_scaling,
                                       (y_pos - self.tile_offset) * self.tile_width * self.tile_scaling))
         # draw player
-        self.screen.blit(self.player.player_image, self.player.position)
+        self.screen.blit(self.player.player_image, (self.player.position_x, self.player.position_y))
 
         # update screen
         pygame.display.update() # TODO only draw tiles with movment -> maybe pass in list of colliding tiles
@@ -192,6 +209,13 @@ class Game:
                                          (y_pos - self.tile_offset) * 32 * self.tile_scaling),
                                         (32 * self.tile_scaling, 32 * self.tile_scaling))
                                     )
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_LEFT:
+                        self.player.velocity_x = -2
+                    if event.key == pygame.K_RIGHT:
+                        self.player.velocity_x = 2
+                    if event.key == pygame.K_UP:
+                        self.player.velocity_y = -5
 
             if time() - start_time > 1 / self.tick_rate:
                 print(f'{colorama.Fore.RED}::performance warning::{colorama.Style.RESET_ALL} event handling time: {time() - start_time}')
