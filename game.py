@@ -1,8 +1,10 @@
 import pygame
 import json
 import colorama
+import random
 
 from time import time
+from player import Player
 
 
 class Game:
@@ -30,7 +32,7 @@ class Game:
         self.background_color = self.color_black
 
         # Tile and Map
-        with open("map/RocketFunlandMap.json") as map_json:
+        with open("textures/RocketFunlandMap.json") as map_json:
             map_dict = json.load(map_json)
         self.tile_height = map_dict["tileheight"]
         self.tile_width = map_dict["tilewidth"]
@@ -38,13 +40,16 @@ class Game:
         self.map_width = map_dict["width"]
         self.map_placment_list = map_dict["layers"][0]["data"]
 
+        self.non_collision_tile = [0]  # maybe find better solution
+
         self.tile_scaling = self.SW / (self.tile_width * self.map_width)
         self.y_offset = self.SH / (self.tile_height * self.map_height * self.tile_scaling)
         self.tile_offset = int((self.map_height - self.y_offset * self.map_height) / 2 + 1)  # +1 to fill rounding gaps
 
-        self.tile_table = self.load_tile_table("map/Tilemap.png", self.tile_height, self.tile_width, self.tile_scaling)
+        self.tile_table = self.load_tile_table("textures/RocketFunlandTilemap.png", self.tile_height, self.tile_width, self.tile_scaling)
 
         self.map = []
+        self.spawn_tiles = []
         element = 0
         line = 0
         for tile in self.map_placment_list:
@@ -52,11 +57,61 @@ class Game:
                 self.map.append([tile - 1])
             else:
                 self.map[line].append(tile - 1)  # -1 because latter used as index
+            # spawn points
+            if tile - 1 == 1:
+                self.spawn_tiles.append((element, line))
+
             if element == self.map_width - 1:
                 line += 1
                 element = 0
             else:
                 element += 1
+
+        # textures collisions
+        self.map_collison = []
+        for y_pos, row in enumerate(self.map):
+            for x_pos, tile in enumerate(row):
+                if tile not in self.non_collision_tile:
+                    if y_pos > 0:
+                        if self.map[y_pos - 1][x_pos] in self.non_collision_tile \
+                                and (x_pos, y_pos) not in self.map_collison:
+                            self.map_collison.append((x_pos, y_pos))
+                    if y_pos < self.map_height - 1:
+                        if self.map[y_pos + 1][x_pos] in self.non_collision_tile \
+                                and (x_pos, y_pos) not in self.map_collison:
+                            self.map_collison.append((x_pos, y_pos))
+                    if x_pos > 0:
+                        if self.map[y_pos][x_pos - 1] in self.non_collision_tile \
+                                and (x_pos, y_pos) not in self.map_collison:
+                            self.map_collison.append((x_pos, y_pos))
+                    if x_pos < self.map_width - 1:
+                        if self.map[y_pos][x_pos + 1] in self.non_collision_tile \
+                                and (x_pos, y_pos) not in self.map_collison:
+                            self.map_collison.append((x_pos, y_pos))
+        self.map_collison_rects = []
+        for y_pos, y_list in enumerate(self.map):
+            for x_pos, tile in enumerate(y_list):
+                if y_pos >= self.tile_offset:
+                    if (x_pos, y_pos) in self.map_collison:
+                        self.map_collison_rects.append(pygame.Rect(
+                            (x_pos * 32 * self.tile_scaling, (y_pos - self.tile_offset) * 32 * self.tile_scaling),
+                            (32 * self.tile_scaling, 32 * self.tile_scaling))
+                        )
+        # debugging draw textures to console
+        # for row in self.textures:
+        #     row_list = []
+        #     for e in row:
+        #         if e < 10:
+        #             row_list.append("0"+str(e))
+        #         else:
+        #             row_list.append(str(e))
+        #     print(row_list)
+
+        # Player
+        self.spawn_position = self.spawn_tiles[random.randint(0, 3)]
+        self.spawn_position = ((self.spawn_position[0]*self.tile_width*self.tile_scaling),
+                               ((self.spawn_position[1] - self.tile_offset) * self.tile_height * self.tile_scaling))
+        self.player = Player("textures/Player.png", self.spawn_position, self)
 
         # Buttons
         #
@@ -85,20 +140,24 @@ class Game:
                 )
         return tile_table
 
-    def screen_update(self):
+    def game_update(self):
         start_time = time()
         # fill screen
         self.screen.fill(self.background_color)
-        # draw map
+        # collision detection
+
+        # draw textures  # TODO only draw tiles with movment
         for y_pos, y_list in enumerate(self.map):
             for x_pos, tile in enumerate(y_list):
                 if y_pos >= self.tile_offset:
                     self.screen.blit(self.tile_table[tile],
                                      (x_pos * self.tile_height * self.tile_scaling,
                                       (y_pos - self.tile_offset) * self.tile_width * self.tile_scaling))
+        # draw player
+        self.screen.blit(self.player.player_image, self.player.position)
 
         # update screen
-        pygame.display.update()
+        pygame.display.update() # TODO only draw tiles with movment -> maybe pass in list of colliding tiles
         if time() - start_time > 1 / self.tick_rate:
             print(f'{colorama.Fore.RED}::performance warning::{colorama.Style.RESET_ALL} screen update time: {time() - start_time}')
 
@@ -118,14 +177,26 @@ class Game:
                 if event.type == pygame.VIDEORESIZE:
                     self.SW, self.SH = pygame.display.get_window_size()
                     self.tile_scaling = self.SW / (self.tile_width * self.map_width)
-                    self.tile_table = self.load_tile_table("map/Tilemap.png", self.tile_height, self.tile_width,
+                    self.player.scaling(self.tile_scaling)
+                    self.tile_table = self.load_tile_table("textures/RocketFunlandTilemap.png", self.tile_height, self.tile_width,
                                                            self.tile_scaling)
                     self.y_offset = self.SH / (self.tile_height * self.map_height * self.tile_scaling)
                     self.tile_offset = int((self.map_height - self.y_offset * self.map_height) / 2 + 1)
+                    self.map_collison_rects = []
+                    for y_pos, y_list in enumerate(self.map):
+                        for x_pos, tile in enumerate(y_list):
+                            if y_pos >= self.tile_offset:
+                                if (x_pos, y_pos) in self.map_collison:
+                                    self.map_collison_rects.append(pygame.Rect(
+                                        (x_pos * 32 * self.tile_scaling,
+                                         (y_pos - self.tile_offset) * 32 * self.tile_scaling),
+                                        (32 * self.tile_scaling, 32 * self.tile_scaling))
+                                    )
+
             if time() - start_time > 1 / self.tick_rate:
                 print(f'{colorama.Fore.RED}::performance warning::{colorama.Style.RESET_ALL} event handling time: {time() - start_time}')
 
-            self.screen_update()
+            self.game_update()
 
             if time() - start_time > 1 / self.tick_rate:
                 print(f'{colorama.Fore.RED}::performance warning::{colorama.Style.RESET_ALL} game loop time: {time() - start_time}')
