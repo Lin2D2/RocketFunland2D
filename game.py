@@ -70,15 +70,15 @@ class Game:
             print(f'error: {error}')
 
     @staticmethod
-    def load_tile_table(filename, width, height, scale):
-        image = pygame.image.load(filename).convert()
-        image_width, image_height = image.get_size()
+    def load_tile_table(file_path, width, height, scale):
+        texture = pygame.image.load(file_path).convert()
+        texture_width, texture_height = texture.get_size()
         tile_table = []
-        for tile_y in range(0, int(image_height / height)):
-            for tile_x in range(0, int(image_width / width)):
+        for tile_y in range(0, int(texture_height / height)):
+            for tile_x in range(0, int(texture_width / width)):
                 rect = (tile_x * width, tile_y * height, width, height)
                 tile_table.append(
-                    pygame.transform.scale(image.subsurface(rect),
+                    pygame.transform.scale(texture.subsurface(rect),
                                            (int(width * scale + 1),  # +1 to fill rounding gaps
                                             int(height * scale + 1))  # +1 to fill rounding gaps
                                            )
@@ -90,16 +90,12 @@ class Game:
         # fill screen
         self.screen.fill(self.background_color)
         # draw map
-        y_pos = 0
-        for y_list in self.map:
-            x_pos = 0
-            for tile in self.map[self.map.index(y_list)]:
+        for y_pos, y_list in enumerate(self.map):
+            for x_pos, tile in enumerate(y_list):
                 if y_pos >= self.tile_offset:
                     self.screen.blit(self.tile_table[tile],
                                      (x_pos * self.tile_height * self.tile_scaling,
                                       (y_pos - self.tile_offset) * self.tile_width * self.tile_scaling))
-                x_pos += 1
-            y_pos += 1
 
         # update screen
         pygame.display.update()
