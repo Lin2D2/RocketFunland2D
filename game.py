@@ -88,16 +88,15 @@ class Game:
         self.scalled_tile_size = int(self.tile_scaling * self.tile_width) + 1
         self.tile_table = self.load_tile_table("textures/RocketFunlandTilemap.png", self.tile_height, self.tile_width,
                                                self.scalled_tile_size)
-        self.y_offset = self.SH / (self.map_height * self.scalled_tile_size)
-        self.tile_offset = int((self.map_height - self.y_offset * self.map_height) / 2 + 1)
+        self.y_offset = ((self.map_height * self.scalled_tile_size) - self.SH)/2 + self.scalled_tile_size
         self.map_collison_rects = []
         for y_pos, y_list in enumerate(self.map):
             for x_pos, tile in enumerate(y_list):
-                if y_pos >= self.tile_offset:
+                if (y_pos * self.scalled_tile_size - self.y_offset) - self.scalled_tile_size >= 0:
                     if (x_pos, y_pos) in self.map_collison:
                         self.map_collison_rects.append(pygame.Rect(
                             (x_pos * self.scalled_tile_size,
-                             (y_pos - self.tile_offset) * self.scalled_tile_size),
+                             y_pos * self.scalled_tile_size),
                             (self.scalled_tile_size, self.scalled_tile_size))
                         )
 
@@ -114,7 +113,7 @@ class Game:
         # Player
         self.spawn_position = self.spawn_tiles[random.randint(0, 3)]
         self.spawn_position = ((self.spawn_position[0] * self.scalled_tile_size),
-                               ((self.spawn_position[1] - self.tile_offset) * self.scalled_tile_size))
+                               ((self.spawn_position[1]) * self.scalled_tile_size))  # y offset missing
         self.player = Player("textures/Player.png", self.spawn_position, self)
 
         # Buttons
@@ -147,18 +146,16 @@ class Game:
         self.player.scaling(self.tile_scaling)
         self.tile_table = self.load_tile_table("textures/RocketFunlandTilemap.png", self.tile_height, self.tile_width,
                                                self.scalled_tile_size)
-        self.y_offset = self.SH / (self.map_height * self.scalled_tile_size)
-        self.tile_offset = int((self.map_height - self.y_offset * self.map_height) / 2 + 1)
+        self.y_offset = ((self.map_height * self.scalled_tile_size) - self.SH)/2 + self.scalled_tile_size
         self.map_collison_rects = []
         for y_pos, y_list in enumerate(self.map):
             for x_pos, tile in enumerate(y_list):
-                if y_pos >= self.tile_offset:
+                if (y_pos * self.scalled_tile_size - self.y_offset) - self.scalled_tile_size >= 0:
                     if (x_pos, y_pos) in self.map_collison:
                         self.map_collison_rects.append(pygame.Rect(
                             (x_pos * self.scalled_tile_size,
-                             (y_pos - self.tile_offset) * self.scalled_tile_size),
-                            (self.scalled_tile_size, self.scalled_tile_size))
-                        )
+                             y_pos * self.scalled_tile_size - self.y_offset),
+                            (self.scalled_tile_size, self.scalled_tile_size)))
 
     def game_update(self):
         start_time = time()
@@ -187,10 +184,10 @@ class Game:
         # draw textures  # TODO only draw tiles with movment
         for y_pos, y_list in enumerate(self.map):
             for x_pos, tile in enumerate(y_list):
-                if y_pos >= self.tile_offset:
+                if (y_pos * self.scalled_tile_size - self.y_offset + self.scalled_tile_size) >= 0:
                     self.screen.blit(self.tile_table[tile],
                                      (x_pos * self.scalled_tile_size,
-                                      (y_pos - self.tile_offset) * self.scalled_tile_size))
+                                      y_pos * self.scalled_tile_size - self.y_offset))
         # draw player
         self.screen.blit(self.player.player_image, (self.player.position_x, self.player.position_y))
 
@@ -214,6 +211,9 @@ class Game:
                     pygame.quit()
                 if event.type == pygame.VIDEORESIZE:
                     self.SW, self.SH = pygame.display.get_window_size()
+                    if self.SH < 500:
+                        self.SH = 500
+                        pygame.display.set_mode((self.SW, self.SH), pygame.RESIZABLE)
                     self.change_scalling()
 
                 if event.type == pygame.KEYDOWN:
