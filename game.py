@@ -92,13 +92,11 @@ class Game:
         self.map_collison_rects = []
         for y_pos, y_list in enumerate(self.map):
             for x_pos, tile in enumerate(y_list):
-                if (y_pos * self.scalled_tile_size - self.y_offset) - self.scalled_tile_size >= 0:
-                    if (x_pos, y_pos) in self.map_collison:
-                        self.map_collison_rects.append(pygame.Rect(
-                            (x_pos * self.scalled_tile_size,
-                             y_pos * self.scalled_tile_size),
-                            (self.scalled_tile_size, self.scalled_tile_size))
-                        )
+                if (x_pos, y_pos) in self.map_collison:
+                    self.map_collison_rects.append(pygame.Rect(
+                        (x_pos * self.scalled_tile_size,
+                         y_pos * self.scalled_tile_size - self.y_offset),
+                        (self.scalled_tile_size, self.scalled_tile_size)))
 
         # debugging draw textures to console
         for row in self.map:
@@ -150,12 +148,11 @@ class Game:
         self.map_collison_rects = []
         for y_pos, y_list in enumerate(self.map):
             for x_pos, tile in enumerate(y_list):
-                if (y_pos * self.scalled_tile_size - self.y_offset) - self.scalled_tile_size >= 0:
-                    if (x_pos, y_pos) in self.map_collison:
-                        self.map_collison_rects.append(pygame.Rect(
-                            (x_pos * self.scalled_tile_size,
-                             y_pos * self.scalled_tile_size - self.y_offset),
-                            (self.scalled_tile_size, self.scalled_tile_size)))
+                if (x_pos, y_pos) in self.map_collison:
+                    self.map_collison_rects.append(pygame.Rect(
+                        (x_pos * self.scalled_tile_size,
+                            y_pos * self.scalled_tile_size - self.y_offset),
+                        (self.scalled_tile_size, self.scalled_tile_size)))
 
     def game_update(self):
         start_time = time()
