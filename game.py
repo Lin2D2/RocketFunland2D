@@ -112,7 +112,9 @@ class Game:
         self.spawn_position = self.spawn_tiles[random.randint(0, 3)]
         self.spawn_position = ((self.spawn_position[0] * self.scalled_tile_size),
                                ((self.spawn_position[1]) * self.scalled_tile_size))  # y offset missing
-        self.player = Player("textures/Player.png", self.spawn_position, self)
+        self.player = Player("textures/Player.png",
+                             (self.spawn_position[0], self.spawn_position[1] - self.y_offset),
+                             self)
 
         # Buttons
         #
