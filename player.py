@@ -14,7 +14,9 @@ class Player:
                                     self.player_image.get_size()[1]
                                     )
         self.velocity_x = 0
+        self.reduce_velocity_x = True
         self.velocity_y = 0
+        self.in_air = False
         self.HP = 100
         self.scaling(parent.tile_scaling)
 
