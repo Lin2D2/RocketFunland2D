@@ -111,15 +111,15 @@ class Game:
                          (self.map_height - self.importend_tile_height + 2) * self.scaled_tile_size / 2),
                         (self.scaled_tile_size, self.scaled_tile_size)))
 
-        # debugging draw textures to console
-        for row in self.map:
-            row_list = []
-            for e in row:
-                if e < 10:
-                    row_list.append("0" + str(e))
-                else:
-                    row_list.append(str(e))
-            print(row_list)
+        # # debugging draw textures to console
+        # for row in self.map:
+        #     row_list = []
+        #     for e in row:
+        #         if e < 10:
+        #             row_list.append("0" + str(e))
+        #         else:
+        #             row_list.append(str(e))
+        #     print(row_list)
 
         # Player
         self.spawn_position = self.spawn_tiles[random.randint(0, 3)]
@@ -233,8 +233,8 @@ class Game:
                                   (self.map_width - self.importend_tile_width) * self.scaled_tile_size / 2,
                                   y_pos * self.scaled_tile_size + self.y_offset / 2 -
                                   (self.map_height - self.importend_tile_height + 2) * self.scaled_tile_size / 2))
-        for rect in self.map_collison_rects:
-            pygame.draw.rect(self.screen, self.color_red, rect)
+        # for rect in self.map_collison_rects:
+        #     pygame.draw.rect(self.screen, self.color_red, rect)
         # draw player
         self.screen.blit(self.player.player_image, (self.player.position_x, self.player.position_y))
 
