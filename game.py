@@ -4,7 +4,7 @@ import colorama
 import random
 
 from time import time
-from player import Player
+from actors.player import Player
 
 
 class Game:
@@ -218,10 +218,21 @@ class Game:
             if self.player.boundary_rect.colliderect(tile):
                 if self.player.velocity_y > 0:
                     self.player.boundary_rect.bottom = tile.top
+                    self.player.in_air = False
                 else:
                     self.player.boundary_rect.top = tile.bottom
                 self.player.velocity_y = 0
-                self.player.in_air = False
+
+        # detect if player fallen of overhang
+        if not self.player.in_air:
+            self.player.boundary_rect.y += 1
+            test = False
+            for tile in self.map_collison_rects:
+                if self.player.boundary_rect.colliderect(tile):
+                    test = True
+            self.player.boundary_rect.y += -1
+            if not test:
+                self.player.in_air = True
 
         # draw textures  # TODO only draw tiles with movment
         for y_pos, y_list in enumerate(self.map):
@@ -280,6 +291,10 @@ class Game:
                         self.player.reduce_velocity_x = True
                     if event.key == pygame.K_RIGHT:
                         self.player.reduce_velocity_x = True
+                if event.type == pygame.MOUSEBUTTONDOWN:
+                    left_mouse_button, middle_mouse_button, right_mouse_button = pygame.mouse.get_pressed(3)
+                    if left_mouse_button:
+                        pass  # fire
 
             if time() - start_time > 1 / self.tick_rate:
                 print(
