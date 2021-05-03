@@ -20,10 +20,6 @@ class Player:
         self.HP = 100
         self.scaling(parent.tile_scaling)
 
-    def move(self, x_v, y_v):
-        self.boundary_rect.x += x_v
-        self.boundary_rect.y += y_v
-
     def scaling(self, scale):
         self.player_image = pygame.transform.scale(self.player_image_inital,
                                                    (int(self.player_image_size_x * scale + 1),
