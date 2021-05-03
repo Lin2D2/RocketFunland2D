@@ -205,25 +205,23 @@ class Game:
                 self.player.reduce_velocity_x = 0
 
         # player collision detection and movement
-        # TODO check for each direction separate
-        player_collider = self.player.boundary
-        collider_x = pygame.Rect(player_collider.x + self.player.velocity_x,
-                                 player_collider.y - .05 * self.tile_scaling,
-                                 player_collider.width,
-                                 player_collider.height)
-        if collider_x.collidelist(self.map_collison_rects) == -1:
-            self.player.move(self.player.velocity_x, 0)
-        else:
-            self.player.velocity_x = 0
-        collider_y = pygame.Rect(player_collider.x,
-                                 player_collider.y + self.player.velocity_y,
-                                 player_collider.width,
-                                 player_collider.height)
-        if collider_y.collidelist(self.map_collison_rects) == -1:
-            self.player.move(0, self.player.velocity_y)
-        else:
-            self.player.in_air = False
-            self.player.velocity_y = 0
+        self.player.boundary_rect.x += self.player.velocity_x
+        for tile in self.map_collison_rects:
+            if self.player.boundary_rect.colliderect(tile):
+                if self.player.velocity_x > 0:
+                    self.player.boundary_rect.right = tile.left
+                else:
+                    self.player.boundary_rect.left = tile.right
+                self.player.velocity_x = 0
+        self.player.boundary_rect.y += self.player.velocity_y
+        for tile in self.map_collison_rects:
+            if self.player.boundary_rect.colliderect(tile):
+                if self.player.velocity_y > 0:
+                    self.player.boundary_rect.bottom = tile.top
+                else:
+                    self.player.boundary_rect.top = tile.bottom
+                self.player.velocity_y = 0
+                self.player.in_air = False
 
         # draw textures  # TODO only draw tiles with movment
         for y_pos, y_list in enumerate(self.map):
@@ -236,7 +234,7 @@ class Game:
         # for rect in self.map_collison_rects:
         #     pygame.draw.rect(self.screen, self.color_red, rect)
         # draw player
-        self.screen.blit(self.player.player_image, (self.player.position_x, self.player.position_y))
+        self.screen.blit(self.player.player_image, (self.player.boundary_rect.x, self.player.boundary_rect.y))
 
         # update screen
         pygame.display.update()  # TODO only draw tiles with movment -> maybe pass in list of colliding tiles
