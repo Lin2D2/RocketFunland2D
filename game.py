@@ -2,10 +2,11 @@ import pygame
 import json
 import colorama
 import random
+import math
 
 from time import time
 from actors.player import Player
-from Widgets.button import Button
+from actors.rocket import Rocket
 
 
 class Game:
@@ -113,8 +114,9 @@ class Game:
                                (self.map_width - self.importend_tile_width) * self.scaled_tile_size / 2,
                                self.spawn_position[1] * self.scaled_tile_size + self.y_offset / 2 -
                                (self.map_height - self.importend_tile_height + 2) * self.scaled_tile_size / 2)
-        self.player = Player("textures/Player.png",
-                             (self.spawn_position[0], self.spawn_position[1]), self)
+        self.player = Player((self.spawn_position[0], self.spawn_position[1]), self)
+
+        self.rockets = []
 
         # Buttons
         #
@@ -159,8 +161,7 @@ class Game:
                                    (self.map_width - self.importend_tile_width) * self.scaled_tile_size / 2,
                                    self.spawn_position[1] * self.scaled_tile_size + self.y_offset / 2 -
                                    (self.map_height - self.importend_tile_height + 2) * self.scaled_tile_size / 2)
-            self.player = Player("textures/Player.png",
-                                 (self.spawn_position[0], self.spawn_position[1]), self)
+            self.player = Player((self.spawn_position[0], self.spawn_position[1]), self)
         # Tile map
         self.tile_table = self.load_tile_table("textures/RocketFunlandTilemap.png", self.tile_height, self.tile_width,
                                                self.scaled_tile_size)
@@ -201,6 +202,7 @@ class Game:
         start_time = time()
         # fill screen
         self.screen.fill(self.background_color)
+        # TODO fix uneaven movment, faster to the left then to the right
         # gravity and friction
         if self.player.velocity_y < 2.5 * self.tile_scaling:
             self.player.velocity_y += .05 * self.tile_scaling
@@ -213,6 +215,21 @@ class Game:
                 self.player.reduce_velocity_x = False
                 self.player.reduce_velocity_x = 0
 
+        # draw textures  # TODO only draw tiles with movment
+        for y_pos, y_list in enumerate(self.map):
+            for x_pos, tile in enumerate(y_list):
+                self.screen.blit(self.tile_table[tile],
+                                 (x_pos * self.scaled_tile_size + self.x_offset / 2 -
+                                  (self.map_width - self.importend_tile_width) * self.scaled_tile_size / 2,
+                                  y_pos * self.scaled_tile_size + self.y_offset / 2 -
+                                  (self.map_height - self.importend_tile_height + 2) * self.scaled_tile_size / 2))
+        # for index, rect in enumerate(self.map_collison_rects_reduced):
+        #     if index % 2 == 0:
+        #         pygame.draw.rect(self.screen, self.color_red, rect)
+        #     else:
+        #         pygame.draw.rect(self.screen, self.color_yellow, rect)
+
+        # handle player
         # player collision detection and movement
         self.player.boundary_rect.x += self.player.velocity_x
         for tile in self.map_collison_rects_reduced:
@@ -242,22 +259,22 @@ class Game:
             self.player.boundary_rect.y += -1
             if not test:
                 self.player.in_air = True
-
-        # draw textures  # TODO only draw tiles with movment
-        for y_pos, y_list in enumerate(self.map):
-            for x_pos, tile in enumerate(y_list):
-                self.screen.blit(self.tile_table[tile],
-                                 (x_pos * self.scaled_tile_size + self.x_offset / 2 -
-                                  (self.map_width - self.importend_tile_width) * self.scaled_tile_size / 2,
-                                  y_pos * self.scaled_tile_size + self.y_offset / 2 -
-                                  (self.map_height - self.importend_tile_height + 2) * self.scaled_tile_size / 2))
-        # for index, rect in enumerate(self.map_collison_rects_reduced):
-        #     if index % 2 == 0:
-        #         pygame.draw.rect(self.screen, self.color_red, rect)
-        #     else:
-        #         pygame.draw.rect(self.screen, self.color_yellow, rect)
         # draw player
-        self.screen.blit(self.player.player_image, (self.player.boundary_rect.x, self.player.boundary_rect.y))
+        self.screen.blit(self.player.image, (self.player.boundary_rect.x, self.player.boundary_rect.y))
+
+        # handle rockets
+        rockets = self.rockets.copy()
+        rockets.reverse()
+        for rocket in rockets:
+            # player collision detection and movement
+            rocket.boundary_rect.x += rocket.velocity_x
+            rocket.boundary_rect.y += rocket.velocity_y
+            if rocket.boundary_rect.collidelist(self.map_collison_rects_reduced) != -1:
+                # TODO explosion
+                self.rockets.remove(rocket)
+
+            # draw rocket
+            self.screen.blit(rocket.image, (rocket.boundary_rect.x, rocket.boundary_rect.y))
 
         # update screen
         pygame.display.update()  # TODO only draw tiles with movment -> maybe pass in list of colliding tiles
@@ -268,7 +285,7 @@ class Game:
     def game_loop(self):
         while self.running:
             # get mouse position
-            mouse = pygame.mouse.get_pos()
+            mouse_x, mouse_y = pygame.mouse.get_pos()
 
             # event handling
             start_time = time()
@@ -306,7 +323,16 @@ class Game:
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     left_mouse_button, middle_mouse_button, right_mouse_button = pygame.mouse.get_pressed(3)
                     if left_mouse_button:
-                        pass  # fire
+                        player_x = self.player.boundary_rect.x
+                        player_y = self.player.boundary_rect.y
+                        direction_x = mouse_x - player_x
+                        direction_y = mouse_y - player_y
+                        direction_length = math.sqrt(direction_x * direction_x + direction_y * direction_y)
+                        direction_x /= direction_length
+                        direction_y /= direction_length
+                        self.rockets.append(
+                            Rocket((player_x, player_y), (direction_x, direction_y), self)
+                        )
 
             if time() - start_time > 1 / self.tick_rate:
                 print(
